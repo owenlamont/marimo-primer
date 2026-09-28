@@ -175,10 +175,14 @@ def main(
     pycons = Pycons.validate(
         pl.read_parquet(pycons_path).drop("__index_level_0__", strict=False)
     )
+    known = pl.col("event_slug").is_in(pycons["event_slug"].implode())
+    orphans = talks.filter(~known)
+    talks = Talks.validate(talks.filter(known))
     pycons = recount(pycons=pycons, talks=talks, urls=schedule_urls(events))
     events_with_talks = pycons.filter(pl.col("talk_count") > 0)["event_slug"]
     print(
-        f"{len(events)} scraped events; {talks.height} talks in total; "
+        f"{len(events)} scraped events; {talks.height} talks in total "
+        f"({orphans.height} dropped for events not in pycons.parquet); "
         f"{events_with_talks.n_unique()} of {pycons['event_slug'].n_unique()} "
         "events have talks"
     )
