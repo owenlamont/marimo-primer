@@ -410,7 +410,7 @@ def _(
                 polygons_data=[
                     PolygonDatum(
                         geometry=row.geometry.__geo_interface__,
-                        altitude=row.altitude,
+                        altitude=row.altitude / 10,
                         cap_color=row.color,
                         label=row.label,
                     )
