@@ -18,6 +18,7 @@ app = marimo.App(width="medium", layout_file="layouts/deck.slides.json")
 @app.cell
 def _():
     import datetime as dt
+    import math
 
     import geopandas as gpd
     import marimo as mo
@@ -39,6 +40,7 @@ def _():
         PolygonsLayerConfig,
         dt,
         gpd,
+        math,
         mo,
         pd,
         points_from_gdf,
@@ -60,17 +62,17 @@ def _(mo):
 
 @app.cell
 def _(mo):
-    price = mo.ui.slider(0, 300, value=90, label="Price ($/MWh)")
-    return (price,)
+    rsvps = mo.ui.slider(0, 150, value=40, label="Meetup RSVPs")
+    return (rsvps,)
 
 
 @app.cell
-def _(mo, price):
-    revenue = price.value * 1_000
+def _(math, mo, rsvps):
+    pizzas = math.ceil(rsvps.value * 3 / 8)
     mo.vstack(
         [
-            price,
-            mo.md(f"Selling 1,000 MWh earns **${revenue:,}**."),
+            rsvps,
+            mo.md(f"At 3 slices each, order **{pizzas} pizzas**."),
             mo.md("Move the slider: this cell reruns."),
         ]
     )
