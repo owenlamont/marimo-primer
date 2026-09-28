@@ -4,8 +4,9 @@ Each input file is `<event_slug>.json` as written by the scraping agents. Re-run
 safe: an event's earlier `schedule` rows are replaced, not duplicated.
 """
 
+from collections.abc import Collection, Iterable, Mapping
 from pathlib import Path
-from typing import Annotated, Final
+from typing import Annotated, Any, Final
 
 import geopandas as gpd
 import orjson
@@ -21,11 +22,33 @@ app = typer.Typer(
 )
 
 
-def read_scraped(scraped_dir: Path) -> pd.DataFrame:
-    """Read every scraped file into one row per talk.
+_TALK_COLUMNS: Final = (
+    "event_slug",
+    "talk_title",
+    "speakers",
+    "recorded",
+    "source",
+    "source_url",
+    "kind",
+)
+
+
+def read_events(scraped_dir: Path) -> list[dict[str, Any]]:
+    """Read every scraped file.
 
     Returns:
-        The talks, in `talks.parquet`'s columns plus `kind`.
+        One mapping per file, including events whose talks were not found.
+    """
+    return [
+        orjson.loads(path.read_bytes()) for path in sorted(scraped_dir.glob("*.json"))
+    ]
+
+
+def scraped_talks(events: Iterable[Mapping[str, Any]]) -> pd.DataFrame:
+    """Flatten scraped events into one row per talk.
+
+    Returns:
+        The talks, in `talks.parquet`'s columns plus `kind`; no rows when none exist.
     """
     rows = [
         {
@@ -37,32 +60,32 @@ def read_scraped(scraped_dir: Path) -> pd.DataFrame:
             "source_url": event["schedule_url"],
             "kind": talk["kind"],
         }
-        for path in sorted(scraped_dir.glob("*.json"))
-        for event in [orjson.loads(path.read_bytes())]
+        for event in events
         for talk in event["talks"]
     ]
-    return pd.DataFrame(rows)
+    return pd.DataFrame(rows, columns=list(_TALK_COLUMNS))
 
 
-def merge_talks(*, talks: pd.DataFrame, scraped: pd.DataFrame) -> pd.DataFrame:
-    """Replace each scraped event's earlier `schedule` rows with the new ones.
+def merge_talks(
+    *, talks: pd.DataFrame, scraped: pd.DataFrame, scraped_slugs: Collection[str]
+) -> pd.DataFrame:
+    """Replace every scraped event's earlier `schedule` rows with the new ones.
+
+    An event in `scraped_slugs` with no rows in `scraped` loses its old rows.
 
     Returns:
         The combined talks table.
     """
-    stale = (talks["source"] == _SOURCE) & talks["event_slug"].isin(
-        scraped["event_slug"]
-    )
+    stale = (talks["source"] == _SOURCE) & talks["event_slug"].isin(scraped_slugs)
     return pd.concat([talks[~stale], scraped], ignore_index=True)
 
 
-def read_schedule_urls(scraped_dir: Path) -> pd.Series:
-    """Read where each scraped event's talks came from.
+def schedule_urls(events: Iterable[Mapping[str, Any]]) -> pd.Series:
+    """Map each scraped event whose talks were found to where they came from.
 
     Returns:
-        `schedule_url` indexed by `event_slug`, for events whose talks were found.
+        `schedule_url` indexed by `event_slug`.
     """
-    events = [orjson.loads(path.read_bytes()) for path in scraped_dir.glob("*.json")]
     return pd.Series(
         {e["event_slug"]: e["schedule_url"] for e in events if e["talks"]},
         name="schedule_url",
@@ -101,12 +124,15 @@ def main(
     ] = False,
 ) -> None:
     """Merge the scraped files in SCRAPED_DIR into public/."""
-    scraped = read_scraped(scraped_dir)
+    events = read_events(scraped_dir)
+    scraped = scraped_talks(events)
     talks = merge_talks(
-        talks=pd.read_parquet(_PUBLIC / "talks.parquet"), scraped=scraped
+        talks=pd.read_parquet(_PUBLIC / "talks.parquet"),
+        scraped=scraped,
+        scraped_slugs={e["event_slug"] for e in events},
     )
     pycons = recount(pycons=gpd.read_parquet(_PUBLIC / "pycons.parquet"), talks=talks)
-    urls = read_schedule_urls(scraped_dir)
+    urls = schedule_urls(events)
     known = pycons.get("schedule_url", pd.Series(pd.NA, index=pycons.index))
     pycons = pycons.assign(
         schedule_url=pycons["event_slug"].map(urls).fillna(known).astype("string")
