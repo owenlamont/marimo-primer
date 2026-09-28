@@ -76,9 +76,13 @@ def recount(*, pycons: gpd.GeoDataFrame, talks: pd.DataFrame) -> gpd.GeoDataFram
     Returns:
         A copy of `pycons` with `talk_count` and `speaker_count` recomputed.
     """
-    per_event = talks.groupby("event_slug").agg(
-        talk_count=("talk_title", "size"),
-        speaker_count=("speakers", lambda s: s.explode().dropna().nunique()),
+    per_event = pd.DataFrame(
+        {
+            "talk_count": talks.groupby("event_slug").size(),
+            "speaker_count": talks.explode("speakers")
+            .groupby("event_slug")["speakers"]
+            .nunique(),
+        }
     )
     counts = pycons[["event_slug"]].join(per_event, on="event_slug")
     recounted = pycons.assign(
