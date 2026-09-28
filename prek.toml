@@ -54,9 +54,9 @@ hooks = [
     id = "ty",
     name = "ty",
     language = "system",
-    entry = "ty check . --error-on-warning",
+    entry = "ty check . --error-on-warning --python .venv",
     pass_filenames = false,
-    types = ["python", "toml"]
+    types_or = ["python", "toml"]
   }
 ]
 
