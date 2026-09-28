@@ -28,15 +28,17 @@ def _():
         GlobeLayerConfig,
         GlobeWidget,
         PointsLayerConfig,
+        PolygonDatum,
         PolygonsLayerConfig,
     )
-    from pyglobegl.geopandas import points_from_gdf, polygons_from_gdf
+    from pyglobegl.geopandas import points_from_gdf
 
     return (
         GlobeConfig,
         GlobeLayerConfig,
         GlobeWidget,
         PointsLayerConfig,
+        PolygonDatum,
         PolygonsLayerConfig,
         dt,
         gpd,
@@ -44,7 +46,6 @@ def _():
         mo,
         pd,
         points_from_gdf,
-        polygons_from_gdf,
     )
 
 
@@ -385,12 +386,12 @@ def _(
     GlobeLayerConfig,
     GlobeWidget,
     PointsLayerConfig,
+    PolygonDatum,
     PolygonsLayerConfig,
     dates,
     is_point,
     mo,
     points_from_gdf,
-    polygons_from_gdf,
     shown,
 ):
     globe = GlobeWidget(
@@ -405,10 +406,16 @@ def _(
                 )
             ),
             polygons=PolygonsLayerConfig(
-                polygons_data=polygons_from_gdf(
-                    shown[~is_point].assign(cap_color=lambda d: d.color),
-                    include_columns=["altitude", "cap_color", "label"],
-                )
+                # polygons_from_gdf rewinds rings, so globe.gl fills them inside out
+                polygons_data=[
+                    PolygonDatum(
+                        geometry=row.geometry.__geo_interface__,
+                        altitude=row.altitude,
+                        cap_color=row.color,
+                        label=row.label,
+                    )
+                    for row in shown[~is_point].itertuples()
+                ]
             ),
         )
     )
