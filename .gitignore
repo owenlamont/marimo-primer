@@ -216,3 +216,6 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# Upstream clones pulled by pycon_globe/build_dataset.py
+pycon_globe/.sources/
