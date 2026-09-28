@@ -253,7 +253,7 @@ def _(mo):
     ## You can tame `.ipynb` diffs
 
     - `nbstripout`, `nbdime`, `jupytext` and ReviewNB all help.
-    - Each is opt-in plumbing every contributor installs and configures.
+    - Each is extra tooling or an integration someone has to set up.
     - marimo is clean by default, with nothing to set up.
 
     ```bash
