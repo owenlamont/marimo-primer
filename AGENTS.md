@@ -5,8 +5,6 @@
 The deck and demos for a marimo talk at the PythonWA Meetup. The deck is itself a marimo
 notebook in the slides layout, and it should also run in the browser via WASM export.
 
-Keep every example unrelated to the author's day job: nothing power- or energy-themed.
-
 ## Layout
 
 - `deck.py` – the slides notebook; `layouts/deck.slides.json` selects the slides layout.
