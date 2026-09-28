@@ -2,25 +2,29 @@
 
 A one-off starting point, kept as the record of where the seed came from: its
 `events.parquet` was since hand-edited and reshaped into `pycons.parquet`, one
-GeoParquet row per event and place, so it refuses to overwrite `talks.parquet`. Events, dates, locations and websites come from python-organizers.
-Talks come from PyVideo, which has recorded talks for only some of those events; the
-rest are filled by hand from each event's website. PyVideo events with no
-python-organizers row are kept with a null location, for `locations_manual.toml` or a
-hand edit to fill. Both upstream datasets are CC0.
+GeoParquet row per event and place, so it refuses to overwrite either. Events,
+dates, locations and websites come from python-organizers. Talks come from PyVideo,
+which has recorded talks for only some of those events; the rest are filled by hand
+from each event's website. PyVideo events with no python-organizers row are kept with
+a null location, for `locations_manual.toml` or a hand edit to fill. Both upstream
+datasets are CC0.
 """
 
-import re
-import subprocess
-import tomllib
-from collections.abc import Iterator, Mapping
+from collections.abc import Callable, Iterator, Mapping
 from dataclasses import dataclass
 from pathlib import Path
+import re
+import shutil
+import subprocess
+import tomllib
 from typing import Final
 
-import orjson
-import polars as pl
 from geopy.extra.rate_limiter import RateLimiter
 from geopy.geocoders import Nominatim
+from geopy.location import Location
+import orjson
+import polars as pl
+
 
 _HERE: Final = Path(__file__).parent
 _DATA_DIR: Final = _HERE.parent / "public"
@@ -61,12 +65,11 @@ def _series_key(name: str) -> str:
 
 
 def _refresh_clone(url: str, dest: Path) -> None:
+    git = shutil.which("git") or "git"
     if dest.exists():
-        subprocess.run(["git", "-C", str(dest), "pull", "-q", "--ff-only"], check=True)
+        subprocess.run([git, "-C", str(dest), "pull", "-q", "--ff-only"], check=True)
     else:
-        subprocess.run(
-            ["git", "clone", "-q", "--depth", "1", url, str(dest)], check=True
-        )
+        subprocess.run([git, "clone", "-q", "--depth", "1", url, str(dest)], check=True)
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)
@@ -91,7 +94,11 @@ def _pyvideo_event_dirs(pyvideo_dir: Path) -> Iterator[Path]:
 
 
 def read_pyvideo(pyvideo_dir: Path) -> Tables:
-    """Read PyVideo's PyCon events and their recorded talks."""
+    """Read PyVideo's PyCon events and their recorded talks.
+
+    Returns:
+        The events, and their talks with `recorded` parsed to a date.
+    """
     events = []
     talks = []
     for event_dir in _pyvideo_event_dirs(pyvideo_dir):
@@ -126,7 +133,11 @@ def read_pyvideo(pyvideo_dir: Path) -> Tables:
 
 
 def read_organizers(organizers_dir: Path) -> pl.DataFrame:
-    """Read every non-cancelled PyCon row from the python-organizers CSVs."""
+    """Read the python-organizers CSVs.
+
+    Returns:
+        One row per non-cancelled PyCon from `_FIRST_YEAR` onwards.
+    """
     frames = [
         pl.read_csv(csv_file, infer_schema=False).with_columns(
             year=pl.lit(int(csv_file.stem))
@@ -162,7 +173,11 @@ def read_organizers(organizers_dir: Path) -> pl.DataFrame:
 
 
 def read_manual_locations(path: Path) -> pl.DataFrame:
-    """Read hand-entered `[event-slug] location = "City, Country"` entries."""
+    """Read hand-entered `[event-slug] location = "City, Country"` entries.
+
+    Returns:
+        One row per entry, or none when the file does not exist.
+    """
     entries = tomllib.loads(path.read_text()) if path.exists() else {}
     return pl.DataFrame(
         [
@@ -180,6 +195,9 @@ def link_pyvideo(
 
     A PyVideo event matching a python-organizers row on year and series takes that
     row's `event_slug`, and its talks are relabelled to match.
+
+    Returns:
+        The combined events and the relabelled talks.
     """
     slug_map = (
         pyvideo_events.with_columns(
@@ -221,6 +239,9 @@ def locate_events(
 
     Events with no python-organizers dates take the first and last recorded date of
     their talks, both bounds inclusive.
+
+    Returns:
+        One row per event, with `location_source` null where no location is known.
     """
     talk_stats = talks.group_by("event_slug").agg(
         talk_count=pl.len(),
@@ -258,11 +279,29 @@ def locate_events(
     )
 
 
+def _lookup_coordinates(
+    lookup: Callable[[str], Location | None], location: str
+) -> dict[str, str | float | None]:
+    parts = [part.strip() for part in location.split(",")]
+    place = lookup(location)
+    if place is None and len(parts) > 2:
+        place = lookup(f"{parts[0]}, {parts[-1]}")
+    print(f"geocoded {location!r}: {'ok' if place else 'NOT FOUND'}")
+    return {
+        "location": location,
+        "lat": place.latitude if place else None,
+        "lng": place.longitude if place else None,
+    }
+
+
 def geocode(locations: pl.Series, cache_path: Path) -> pl.DataFrame:
     """Look up each location's coordinates, calling Nominatim only for uncached ones.
 
     Side effect: rewrites `cache_path` with any newly looked-up locations, including
     misses (null coordinates), so a miss is not retried on every build.
+
+    Returns:
+        The updated cache: one row per location ever looked up.
     """
     schema = {"location": pl.String, "lat": pl.Float64, "lng": pl.Float64}
     cache = (
@@ -277,26 +316,18 @@ def geocode(locations: pl.Series, cache_path: Path) -> pl.DataFrame:
             user_agent=_GEOCODER_USER_AGENT, timeout=_GEOCODE_TIMEOUT_SECONDS
         )
         lookup = RateLimiter(geocoder.geocode, min_delay_seconds=_GEOCODE_DELAY_SECONDS)
-        found = []
-        for location in missing:
-            parts = [part.strip() for part in location.split(",")]
-            place = lookup(location)
-            if place is None and len(parts) > 2:
-                place = lookup(f"{parts[0]}, {parts[-1]}")
-            found.append(
-                {
-                    "location": location,
-                    "lat": place.latitude if place else None,
-                    "lng": place.longitude if place else None,
-                }
-            )
-            print(f"geocoded {location!r}: {'ok' if place else 'NOT FOUND'}")
+        found = [_lookup_coordinates(lookup, location) for location in missing]
         cache = pl.concat([cache, pl.DataFrame(found, schema=schema)])
         cache.write_parquet(cache_path)
     return cache
 
 
 def main() -> None:
+    """Clone both upstream datasets and write the seed tables.
+
+    Raises:
+        SystemExit: If either output table already exists.
+    """
     outputs = (_DATA_DIR / "pycons.parquet", _DATA_DIR / "talks.parquet")
     if existing := [p.name for p in outputs if p.exists()]:
         raise SystemExit(

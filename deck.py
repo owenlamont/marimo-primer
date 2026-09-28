@@ -10,6 +10,7 @@
 
 import marimo
 
+
 __generated_with = "0.25.0"
 app = marimo.App(width="medium", layout_file="layouts/deck.slides.json")
 
@@ -69,9 +70,8 @@ def _(mo, price):
     mo.vstack(
         [
             price,
-            mo.md(
-                f"Selling 1,000 MWh earns **${revenue:,}**. Move the slider: this cell reruns."
-            ),
+            mo.md(f"Selling 1,000 MWh earns **${revenue:,}**."),
+            mo.md("Move the slider: this cell reruns."),
         ]
     )
     return
