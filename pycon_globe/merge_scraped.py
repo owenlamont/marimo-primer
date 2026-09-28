@@ -47,7 +47,9 @@ def read_events(scraped_dir: Path) -> list[dict[str, Any]]:
     ]
 
 
-def scraped_talks(events: Iterable[Mapping[str, Any]]) -> DataFrame[Talks]:
+def scraped_talks(
+    events: Iterable[Mapping[str, Any]], *, source: TalkSource
+) -> DataFrame[Talks]:
     """Flatten scraped events into one row per talk.
 
     Returns:
@@ -59,7 +61,7 @@ def scraped_talks(events: Iterable[Mapping[str, Any]]) -> DataFrame[Talks]:
             "talk_title": talk["title"].strip(),
             "speakers": [s.strip() for s in talk["speakers"] if s.strip()],
             "recorded": None,
-            "source": TalkSource.SCHEDULE.value,
+            "source": source.value,
             "source_url": event["schedule_url"],
             "kind": talk["kind"],
         }
@@ -84,17 +86,18 @@ def merge_talks(
     talks: DataFrame[Talks],
     scraped: DataFrame[Talks],
     scraped_slugs: Collection[str],
+    source: TalkSource,
 ) -> DataFrame[Talks]:
-    """Replace every scraped event's earlier `schedule` rows with the new ones.
+    """Replace every scraped event's earlier rows from `source` with the new ones.
 
     An event in `scraped_slugs` with no rows in `scraped` loses its old rows.
 
     Returns:
         The combined talks.
     """
-    stale = (pl.col("source") == TalkSource.SCHEDULE.value) & pl.col(
-        "event_slug"
-    ).is_in(list(scraped_slugs))
+    stale = (pl.col("source") == source.value) & pl.col("event_slug").is_in(
+        list(scraped_slugs)
+    )
     return Talks.validate(pl.concat([talks.filter(~stale), scraped]))
 
 
@@ -156,13 +159,17 @@ def main(
     write: Annotated[
         bool, typer.Option(help="Write the tables; without it, only report.")
     ] = False,
+    source: Annotated[
+        TalkSource, typer.Option(help="Where SCRAPED_DIR's talks came from.")
+    ] = TalkSource.SCHEDULE,
 ) -> None:
     """Merge the scraped files in SCRAPED_DIR into public/."""
     events = read_events(scraped_dir)
     talks = merge_talks(
         talks=read_talks(_PUBLIC / "talks.parquet"),
-        scraped=scraped_talks(events),
+        scraped=scraped_talks(events, source=source),
         scraped_slugs={e["event_slug"] for e in events},
+        source=source,
     )
     pycons_path = _PUBLIC / "pycons.parquet"
     pycons = Pycons.validate(

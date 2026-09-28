@@ -8,6 +8,7 @@ import polars as pl
 class TalkSource(StrEnum):
     PYVIDEO = "pyvideo"
     SCHEDULE = "schedule"
+    YOUTUBE = "youtube"
 
 
 class TalkKind(StrEnum):
