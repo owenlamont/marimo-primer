@@ -145,7 +145,7 @@ def recount(
 
 def write_pycons(pycons: DataFrame[Pycons], path: Path) -> None:
     """Write `pycons` over `path`, keeping the file's GeoParquet `geo` metadata."""
-    geo = pq.read_schema(path).metadata[b"geo"].decode()
+    geo = pq.read_metadata(path).metadata[b"geo"].decode()
     pycons.write_parquet(path, metadata={"geo": geo})
 
 
