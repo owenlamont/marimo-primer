@@ -345,7 +345,7 @@ def _(mo):
 def _(dt, mo):
     dates = mo.ui.date_range(
         start=dt.date(2020, 1, 1),
-        stop=dt.date(2026, 12, 31),
+        stop=dt.date.today(),
         value=(dt.date(2024, 1, 1), dt.date(2024, 12, 31)),
         label="PyCons held between",
     )
