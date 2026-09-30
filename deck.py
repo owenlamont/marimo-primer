@@ -423,9 +423,9 @@ def _(alt, mo, pycons):
             y=alt.Y("talk_count:Q", title="talks"),
             tooltip=["event_name", "start_date:T", "talk_count"],
         )
+        .add_params(alt.selection_interval(name="dates", encodings=["x"]))
         .properties(width=width_px, height=80)
         .configure(autosize=alt.AutoSizeParams(type="fit", contains="padding")),
-        chart_selection="interval",
         legend_selection=False,
     )
     return timeline, width_px
@@ -433,9 +433,10 @@ def _(alt, mo, pycons):
 
 @app.cell
 def _(pd, pycons, timeline):
-    picked = timeline.value
     in_range = (
-        pycons if picked.empty else pycons[pycons.event_slug.isin(picked.event_slug)]
+        pycons[pycons.event_slug.isin(timeline.value.event_slug)]
+        if any(timeline.selections.values())
+        else pycons
     )
     shown = in_range.assign(
         altitude=lambda d: d.talk_count / 200,
