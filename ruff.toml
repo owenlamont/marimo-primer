@@ -1,4 +1,6 @@
 line-length = 88
+# verbatim sample notebooks shown on a slide
+extend-exclude = ["public/diff"]
 indent-width = 4
 
 [format]
