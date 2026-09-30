@@ -3,6 +3,7 @@ name = "marimo-primer"
 version = "0.1.0"
 requires-python = ">=3.14"
 dependencies = [
+    "altair>=6.3.0",
     "geopandas>=1.1.4",
     "geopy>=2.5.0",
     "marimo>=0.23.0",
