@@ -58,6 +58,19 @@ def _():
     )
 
 
+@app.cell
+def _(mo, pathlib, urllib):
+    # read bytes ourselves: pandas' URL reader gunzips a gzip-served body twice
+    def read_public(name: str) -> bytes:
+        source = mo.notebook_location() / "public" / name
+        if isinstance(source, pathlib.Path):
+            return source.read_bytes()
+        with urllib.request.urlopen(str(source)) as response:
+            return response.read()
+
+    return (read_public,)
+
+
 @app.cell(hide_code=True)
 def _(mo):
     title = mo.md(r"""
@@ -74,7 +87,7 @@ def _(mo):
     )
     mo.Html(
         '<div style="display: flex; justify-content: center; align-items: center;'
-        f' gap: 4rem"><div>{title.text}</div>{logo.text}</div>'
+        f' gap: 4rem"><div>{title.text}</div><a href="https://marimo.io">{logo.text}</a></div>'
     )
     return
 
@@ -84,9 +97,9 @@ def _(mo):
     mo.md(r"""
     ## Why marimo exists
 
-    [Akshay Agrawal](https://x.com/akshaykagrawal) (Stanford, Google Brain) and
-    [Myles Scolnick](https://x.com/themylesfiles) (Palantir) launched marimo in
-    January 2024. Jupyter frustrated Akshay's research:
+    [Akshay Agrawal](https://www.linkedin.com/in/akshayka/) (Stanford, Google Brain)
+    and [Myles Scolnick](https://www.linkedin.com/in/mscolnick/) (Palantir) launched
+    marimo in January 2024. Jupyter frustrated Akshay's research:
 
     - **Hidden state**: over a third of notebooks on GitHub fail to reproduce.
     - **JSON** is hard to use in Python codebases.
@@ -215,9 +228,14 @@ def _(math, mo, rsvps):
     pizzas = math.ceil(rsvps.value * 3 / 8)
     mo.vstack(
         [
+            mo.md(r"""
+    ## Live: how much pizza for the meetup?
+
+    `rsvps` is a `mo.ui.slider`, and this cell reads `rsvps.value`. Drag it and marimo
+    reruns this cell: no callbacks, no re-running by hand.
+    """),
             rsvps,
             mo.md(f"At 3 slices each, order **{pizzas} pizzas**."),
-            mo.md("Move the slider: this cell reruns."),
         ]
     )
     return
@@ -305,6 +323,37 @@ def _(mo):
 
 
 @app.cell(hide_code=True)
+def _(mo, read_public):
+    def raw_file(name: str, language: str) -> mo.Html:
+        source = read_public(f"diff/{name}").decode()
+        fence = f"```{language}\n{source}\n```"
+        line_count = source.count("\n")
+        return mo.vstack(
+            [
+                mo.md(f"**{name}** · {line_count} lines"),
+                mo.Html(f'<div class="raw-file">{mo.md(fence).text}</div>'),
+            ]
+        )
+
+    mo.vstack(
+        [
+            mo.md("## The same two cells, as each saves them"),
+            mo.Html(
+                "<style>.raw-file pre, .raw-file code"
+                # vh so all 57 lines fit whatever the screen height
+                " { font-size: 1.05vh !important; line-height: 1.2 !important }</style>"
+            ),
+            mo.hstack(
+                [raw_file("pizza.py", "python"), raw_file("pizza.ipynb", "json")],
+                widths="equal",
+                gap=2,
+            ),
+        ]
+    )
+    return
+
+
+@app.cell(hide_code=True)
 def _(mo):
     mo.md(r"""
     ## You can tame `.ipynb` diffs
@@ -367,8 +416,8 @@ def _(mo):
     /marimo-pair pair with me on notebook.py
     ```
 
-    Led by [Trevor Manz](https://bsky.app/profile/manzt.sh), a founding engineer at
-    marimo.
+    Led by [Trevor Manz](https://www.linkedin.com/in/trevor-manz/), a founding engineer
+    at marimo.
     """)
     return
 
@@ -394,14 +443,14 @@ def _(mo):
     mo.md(r"""
     ## anywidget: write a widget once, run it everywhere
 
-    [Trevor Manz](https://bsky.app/profile/manzt.sh) built it during his Harvard PhD;
-    marimo made it its plugin API and hired him.
+    [Trevor Manz](https://www.linkedin.com/in/trevor-manz/) built it during his Harvard
+    PhD; marimo made it its plugin API and hired him.
 
     - **Before**: PyPI **and** npm packages, a JS build, an adapter per platform.
     - **Now**: one Python class plus an ES module, for Jupyter, Colab, VS Code, marimo.
-    - [Vincent Warmerdam](https://x.com/fishnets88) (scikit-lego, now at marimo) keeps
-      [wigglystuff](https://github.com/koaning/wigglystuff); next up,
-      [pyglobegl](https://github.com/owenlamont/pyglobegl).
+    - [Vincent Warmerdam](https://www.linkedin.com/in/vincentwarmerdam/) (scikit-lego,
+      now at marimo) keeps [wigglystuff](https://github.com/koaning/wigglystuff);
+      next up, [pyglobegl](https://github.com/owenlamont/pyglobegl).
     """)
     return
 
@@ -418,15 +467,8 @@ def _(mo):
 
 
 @app.cell
-def _(gpd, io, mo, pathlib, pd, urllib):
-    source = mo.notebook_location() / "public" / "pycons.parquet"
-    # under WASM pandas would gunzip GitHub Pages' already-decoded gzip body again
-    if isinstance(source, pathlib.Path):
-        parquet_bytes = source.read_bytes()
-    else:
-        with urllib.request.urlopen(str(source)) as response:
-            parquet_bytes = response.read()
-    table = pd.read_parquet(io.BytesIO(parquet_bytes))
+def _(gpd, io, pd, read_public):
+    table = pd.read_parquet(io.BytesIO(read_public("pycons.parquet")))
     pycons = gpd.GeoDataFrame(
         table, geometry=gpd.GeoSeries.from_wkb(table.geometry), crs="EPSG:4326"
     )
