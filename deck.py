@@ -18,7 +18,10 @@ app = marimo.App(width="medium", layout_file="layouts/deck.slides.json")
 
 @app.cell
 def _():
+    import io
     import math
+    import pathlib
+    import urllib.request
 
     import altair as alt
     import geopandas as gpd
@@ -45,10 +48,13 @@ def _():
         PolygonsLayerConfig,
         alt,
         gpd,
+        io,
         math,
         mo,
+        pathlib,
         pd,
         points_from_gdf,
+        urllib,
     )
 
 
@@ -403,9 +409,15 @@ def _(mo):
 
 
 @app.cell
-def _(gpd, mo, pd):
-    # pandas, unlike geopandas, can read a URL, which is where the file is under WASM
-    table = pd.read_parquet(str(mo.notebook_location() / "public" / "pycons.parquet"))
+def _(gpd, io, mo, pathlib, pd, urllib):
+    source = mo.notebook_location() / "public" / "pycons.parquet"
+    # under WASM pandas would gunzip GitHub Pages' already-decoded gzip body again
+    if isinstance(source, pathlib.Path):
+        parquet_bytes = source.read_bytes()
+    else:
+        with urllib.request.urlopen(str(source)) as response:
+            parquet_bytes = response.read()
+    table = pd.read_parquet(io.BytesIO(parquet_bytes))
     pycons = gpd.GeoDataFrame(
         table, geometry=gpd.GeoSeries.from_wkb(table.geometry), crs="EPSG:4326"
     )
