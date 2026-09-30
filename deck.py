@@ -414,6 +414,7 @@ def _(gpd, mo, pd):
 
 @app.cell
 def _(alt, mo, pycons):
+    width_px = 640
     timeline = mo.ui.altair_chart(
         alt.Chart(pycons[["event_slug", "event_name", "start_date", "talk_count"]])
         .mark_circle(size=40)
@@ -422,12 +423,12 @@ def _(alt, mo, pycons):
             y=alt.Y("talk_count:Q", title="talks"),
             tooltip=["event_name", "start_date:T", "talk_count"],
         )
-        .properties(width=640, height=80)
+        .properties(width=width_px, height=80)
         .configure(autosize=alt.AutoSizeParams(type="fit", contains="padding")),
         chart_selection="interval",
         legend_selection=False,
     )
-    return (timeline,)
+    return timeline, width_px
 
 
 @app.cell
@@ -471,10 +472,11 @@ def _(
     points_from_gdf,
     shown,
     timeline,
+    width_px,
 ):
     globe = GlobeWidget(
         config=GlobeConfig(
-            layout=GlobeLayoutConfig(width=640, height=480),
+            layout=GlobeLayoutConfig(width=width_px, height=480),
             globe=GlobeLayerConfig(
                 globe_image_url="https://cdn.jsdelivr.net/npm/three-globe/example/img/earth-day.jpg"
             ),
