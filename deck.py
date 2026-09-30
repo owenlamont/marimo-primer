@@ -60,13 +60,22 @@ def _():
 
 @app.cell(hide_code=True)
 def _(mo):
-    mo.md(r"""
+    title = mo.md(r"""
     # a marimo primer
 
     ## Reactive Python notebooks
 
     An introduction for Jupyter users · PythonWA
     """)
+    logo = mo.image(
+        str(mo.notebook_location() / "public" / "marimo-logotype.svg"),
+        alt="marimo logo",
+        width=320,
+    )
+    mo.Html(
+        '<div style="display: flex; justify-content: center; align-items: center;'
+        f' gap: 4rem"><div>{title.text}</div>{logo.text}</div>'
+    )
     return
 
 
@@ -76,8 +85,8 @@ def _(mo):
     ## Why marimo exists
 
     [Akshay Agrawal](https://x.com/akshaykagrawal) (Stanford, Google Brain) and
-    [Myles Scolnick](https://x.com/themylesfiles) (Palantir), launched January 2024.
-    Jupyter frustrated Akshay's research:
+    [Myles Scolnick](https://x.com/themylesfiles) (Palantir) launched marimo in
+    January 2024. Jupyter frustrated Akshay's research:
 
     - **Hidden state**: over a third of notebooks on GitHub fail to reproduce.
     - **JSON** is hard to use in Python codebases.
