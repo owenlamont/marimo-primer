@@ -11,6 +11,9 @@ resolution-markers = [
 exclude-newer = "0001-01-01T00:00:00Z" # This has no effect and is included for backwards compatibility when using relative exclude-newer values.
 exclude-newer-span = "P7D"
 
+[options.exclude-newer-package]
+pyglobegl = false
+
 [[package]]
 name = "altair"
 version = "6.3.0"
@@ -476,7 +479,7 @@ requires-dist = [
     { name = "orjson", specifier = ">=3.12.0" },
     { name = "polars", specifier = ">=1.44.2" },
     { name = "pyarrow", specifier = ">=25.0.1" },
-    { name = "pyglobegl", extras = ["geopandas"], specifier = ">=0.9.1" },
+    { name = "pyglobegl", extras = ["geopandas"], specifier = ">=0.9.2" },
     { name = "typer", specifier = ">=0.27.2" },
 ]
 
@@ -1017,7 +1020,7 @@ wheels = [
 
 [[package]]
 name = "pyglobegl"
-version = "0.9.1"
+version = "0.9.2"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "anywidget" },
@@ -1027,9 +1030,9 @@ dependencies = [
     { name = "pydantic-extra-types" },
     { name = "traitlets" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/db/7b/7edc10fc703502bd2d30d648e5fbc85f57c479b55df53127d32ee137d91b/pyglobegl-0.9.1.tar.gz", hash = "sha256:f1813d983d31866be6d2128643ef171eb0e1501bbd16eb03a36d59f588ad25ee", size = 1334735, upload-time = "2026-08-16T14:11:22.948Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/ea/ae/98c750418e661620467bc68bfa18dd34e9f36355b38b93f335adba9bd5ad/pyglobegl-0.9.2.tar.gz", hash = "sha256:748fed428f33f6efa09fc8cfc9a93b54a0b891d92d4ce7afa11c4f6b1e78f6fd", size = 1335072, upload-time = "2026-10-01T04:34:48.905Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/c5/75/fe5b0c16dbe0e71d52b8e13ade3c6f9b5b0241d52993f458e5213847fd12/pyglobegl-0.9.1-py3-none-any.whl", hash = "sha256:2ebb1f7f4124f0dace0ec06fa1ad6361b9e69a47e70a0f9100a10eedf649c0ff", size = 1337060, upload-time = "2026-08-16T14:11:21.434Z" },
+    { url = "https://files.pythonhosted.org/packages/64/97/c628124c4d0eac458c78c2f3cf862c89364b42955fe7cdd3bee0284f8e8a/pyglobegl-0.9.2-py3-none-any.whl", hash = "sha256:fe923399a3b9902bbd33923fd0ee0315f4fd8ed7f80d696f46564a21e28d6ae3", size = 1337255, upload-time = "2026-10-01T04:34:47.543Z" },
 ]
 
 [package.optional-dependencies]
