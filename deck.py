@@ -378,7 +378,7 @@ def _(mo):
     ```
 
     Pyodide runs the notebook in the browser, with no server. JupyterLite does the same
-    for Jupyter. This deck's last slide runs that way too.
+    for Jupyter.
     """)
     return
 
@@ -562,6 +562,19 @@ def _(
     mo.vstack(
         [mo.md("## Every PyCon since 2020"), mo.center(timeline), mo.center(globe)]
     )
+    return
+
+
+@app.cell(hide_code=True)
+def _(mo):
+    mo.md(r"""
+    ## Questions?
+
+    - Slides: [github.com/owenlamont/marimo-primer](https://github.com/owenlamont/marimo-primer)
+    - [linkedin.com/in/owen-lamont](https://www.linkedin.com/in/owen-lamont/)
+    - [fosstodon.org/@owenrlamont](https://fosstodon.org/@owenrlamont)
+    - [bsky.app/profile/owen7ba.bsky.social](https://bsky.app/profile/owen7ba.bsky.social)
+    """)
     return
 
 
