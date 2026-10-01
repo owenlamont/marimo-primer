@@ -378,7 +378,7 @@ def _(mo):
     ```
 
     Pyodide runs the notebook in the browser, with no server. JupyterLite does the same
-    for Jupyter. This deck's last slide runs that way too.
+    for Jupyter.
     """)
     return
 
