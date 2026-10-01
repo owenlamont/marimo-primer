@@ -565,5 +565,18 @@ def _(
     return
 
 
+@app.cell(hide_code=True)
+def _(mo):
+    mo.md(r"""
+    ## Questions?
+
+    - Slides: [github.com/owenlamont/marimo-primer](https://github.com/owenlamont/marimo-primer)
+    - [linkedin.com/in/owen-lamont](https://www.linkedin.com/in/owen-lamont/)
+    - [fosstodon.org/@owenrlamont](https://fosstodon.org/@owenrlamont)
+    - [bsky.app/profile/owen7ba.bsky.social](https://bsky.app/profile/owen7ba.bsky.social)
+    """)
+    return
+
+
 if __name__ == "__main__":
     app.run()
