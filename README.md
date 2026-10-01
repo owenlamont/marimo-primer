@@ -1,12 +1,20 @@
 # marimo-primer
 
+[![Open in molab](https://marimo.io/molab-shield.svg)](https://molab.marimo.io/github/owenlamont/marimo-primer/blob/main/deck.py)
+
 The deck and demos for a talk introducing [marimo](https://marimo.io) to Jupyter users,
 given at the PythonWA Meetup. The deck is itself a marimo notebook in the slides layout,
 so its demos run live on the slides. It ends on a globe of every PyCon since 2020.
 
 ## Running the slides
 
-You need [uv](https://docs.astral.sh/uv/). Then:
+To view the slides on molab:
+
+1. Click the badge above, then **Run on server**.
+2. Toggle app mode to hide the code.
+3. Select **Slides** from the layout dropdown.
+
+To run locally, you need [uv](https://docs.astral.sh/uv/). Then:
 
 ```sh
 git clone https://github.com/owenlamont/marimo-primer.git
