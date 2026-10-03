@@ -27,6 +27,9 @@ def _():
     import geopandas as gpd
     import marimo as mo
     import pandas as pd
+
+    # Import explicitly so molab can discover the globe's optional dependency.
+    import pandera.pandas as pa
     from pyglobegl import (
         GlobeConfig,
         GlobeLayerConfig,
@@ -49,6 +52,7 @@ def _():
         io,
         math,
         mo,
+        pa,
         pathlib,
         pd,
         points_from_gdf,
