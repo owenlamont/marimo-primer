@@ -1,6 +1,7 @@
 from enum import StrEnum
 from typing import Annotated
 
+from pandera.api.polars.model_config import BaseConfig
 import pandera.polars as pa
 import polars as pl
 
@@ -28,5 +29,6 @@ class Talks(pa.DataFrameModel):
     source_url: str = pa.Field(nullable=True)
     kind: Annotated[pl.Enum, [k.value for k in TalkKind]] = pa.Field(nullable=True)
 
-    class Config:
+    # Pandera needs nested Config; ty treats its mutable attribute as invariant.
+    class Config(BaseConfig):  # ty: ignore[invalid-mutable-override]
         strict = True
